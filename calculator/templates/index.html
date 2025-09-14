@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Calculator by Durgaram</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #2C3E50;
+        }
+
+        .header p {
+            margin: 5px 0;
+            color: #7F8C8D;
+        }
+        
+        .container {
+            display: flex;
+            gap: 30px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .drawing-section {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .answer-section {
+            flex: 1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 800px;
+            position: sticky;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #drawingCanvas {
+            border: 2px solid #333;
+            border-radius: 10px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        #selectionCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .tool-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+
+        button.active {
+            background-color: #2C3E50;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.active {
+            border-color: #2C3E50;
+        }
+
+        #response {
+            padding: 20px;
+            font-size: 18px;
+            line-height: 1.6;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .answer-section h2 {
+            margin-top: 0;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            color: #333;
+        }
+
+        .eraser-size, .pen-size {
+            width: 100px;
+        }
+
+        .history-section {
+            margin-top: 20px;
+            border-top: 2px solid #eee;
+            padding-top: 15px;
+        }
+
+        .history-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .select-region {
+            position: absolute;
+            border: 2px dashed #4CAF50;
+            background-color: rgba(76, 175, 80, 0.1);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AI Calculator</h1>
+        <p>Created by Durgaram</p>
+    </div>
+
+    <div class="container">
+        <div class="drawing-section">
+            <div class="canvas-container">
+                <canvas id="drawingCanvas" width="1000" height="800"></canvas>
+                <canvas id="selectionCanvas" width="1000" height="800"></canvas>
+            </div>
+            <div class="controls">
+                <div class="tool-section">
+                    <button id="undoBtn" onclick="undo()" disabled>↩ Undo</button>
+                    <button id="redoBtn" onclick="redo()" disabled>↪ Redo</button>
+                </div>
+                <div class="tool-section">
+                    <button id="penBtn" class="active" onclick="setTool('pen')">Pen</button>
+                    <button id="eraserBtn" onclick="setTool('eraser')">Eraser</button>
+                    <button id="selectBtn" onclick="setTool('select')">Select Region</button>
+                    <input type="range" class="pen-size" min="1" max="20" value="8" onchange="setPenSize(this.value)">
+                </div>
+                <div class="tool-section">
+                    <div class="color-option active" style="background-color: red;" onclick="setColor('red')"></div>
+                    <div class="color-option" style="background-color: blue;" onclick="setColor('blue')"></div>
+                    <div class="color-option" style="background-color: green;" onclick="setColor('green')"></div>
+                    <div class="color-option" style="background-color: black;" onclick="setColor('black')"></div>
+                </div>
+                <div class="tool-section">
+                    <button onclick="clearCanvas()">Clear Canvas</button>
+                    <button onclick="clearHistory()">Clear History</button>
+                    <button onclick="analyzeSelected()">Solve Selected</button>
+                    <button onclick="analyzeDrawing()">Solve All</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="answer-section">
+            <h2>Solution</h2>
+            <div id="response">Draw a math problem and click "Solve Problem" to get the solution.</div>
+            <div class="history-section">
+                <h3>History</h3>
+                <div id="solutionHistory"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const selectionCanvas = document.getElementById('selectionCanvas');
+        const ctx = canvas.getContext('2d');
+        const selectionCtx = selectionCanvas.getContext('2d');
+        
+        let isDrawing = false;
+        let isSelecting = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentTool = 'pen';
+        let currentColor = 'red';
+        let currentSize = 8;
+        let undoStack = [];
+        let redoStack = [];
+        let selectionStart = { x: 0, y: 0 };
+        let selectionEnd = { x: 0, y: 0 };
+        let solutions = [];
+
+        // Set initial canvas states
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = currentSize;
+        ctx.lineCap = 'round';
+
+        function saveState() {
+            undoStack.push(canvas.toDataURL());
+            redoStack = [];
+            updateUndoRedoButtons();
+        }
+
+        function updateUndoRedoButtons() {
+            document.getElementById('undoBtn').disabled = undoStack.length === 0;
+            document.getElementById('redoBtn').disabled = redoStack.length === 0;
+        }
+
+        function undo() {
+            if (undoStack.length > 0) {
+                redoStack.push(canvas.toDataURL());
+                const imgData = undoStack.pop();
+                const img = new Image();
+                img.src = imgData;
+                img.onload = () => {
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    updateUndoRedoButtons();
+                };
+            }
+        }
+
+        function redo() {
+            if (redoStack.length > 0) {
+                undoStack.push(canvas.toDataURL());
+                const imgData = redoStack.pop();
+                const img = new Image();
+                img.src = imgData;
+                img.onload = () => {
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    updateUndoRedoButtons();
+                };
+            }
+        }
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.getElementById('penBtn').classList.toggle('active', tool === 'pen');
+            document.getElementById('eraserBtn').classList.toggle('active', tool === 'eraser');
+            document.getElementById('selectBtn').classList.toggle('active', tool === 'select');
+            
+            if (tool === 'eraser') {
+                ctx.strokeStyle = 'white';
+            } else {
+                ctx.strokeStyle = currentColor;
+            }
+
+            // Clear selection when changing tools
+            if (tool !== 'select') {
+                clearSelection();
+            }
+        }
+
+        function clearSelection() {
+            selectionCtx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
+        }
+
+        function setColor(color) {
+            currentColor = color;
+            if (currentTool === 'pen') {
+                ctx.strokeStyle = color;
+            }
+            document.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.toggle('active', opt.style.backgroundColor === color);
+            });
+        }
+
+        function setPenSize(size) {
+            currentSize = size;
+            ctx.lineWidth = size;
+        }
+
+        function startDrawing(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (currentTool === 'select') {
+                isSelecting = true;
+                selectionStart = { x, y };
+                clearSelection();
+            } else {
+                isDrawing = true;
+                [lastX, lastY] = [x, y];
+            }
+        }
+
+        function draw(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (currentTool === 'select' && isSelecting) {
+                selectionEnd = { x, y };
+                drawSelection();
+            } else if (isDrawing) {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                [lastX, lastY] = [x, y];
+            }
+        }
+
+        function drawSelection() {
+            selectionCtx.clearRect(0, 0, selectionCanvas.width, selectionCanvas.height);
+            selectionCtx.strokeStyle = '#4CAF50';
+            selectionCtx.lineWidth = 2;
+            selectionCtx.setLineDash([5, 5]);
+            
+            const width = selectionEnd.x - selectionStart.x;
+            const height = selectionEnd.y - selectionStart.y;
+            
+            selectionCtx.strokeRect(selectionStart.x, selectionStart.y, width, height);
+            selectionCtx.fillStyle = 'rgba(76, 175, 80, 0.1)';
+            selectionCtx.fillRect(selectionStart.x, selectionStart.y, width, height);
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                saveState();
+            }
+            if (isSelecting) {
+                isSelecting = false;
+            }
+        }
+
+        function clearCanvas() {
+            saveState();
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = currentTool === 'eraser' ? 'white' : currentColor;
+            clearSelection();
+        }
+
+        function clearHistory() {
+            solutions = [];
+            updateSolutionHistory();
+        }
+
+        function getSelectedRegion() {
+            const x = Math.min(selectionStart.x, selectionEnd.x);
+            const y = Math.min(selectionStart.y, selectionEnd.y);
+            const width = Math.abs(selectionEnd.x - selectionStart.x);
+            const height = Math.abs(selectionEnd.y - selectionStart.y);
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCtx.fillStyle = 'white';
+            tempCtx.fillRect(0, 0, width, height);
+            tempCtx.drawImage(canvas, x, y, width, height, 0, 0, width, height);
+            
+            return tempCanvas.toDataURL();
+        }
+
+        function analyzeSelected() {
+            if (selectionEnd.x === 0 && selectionEnd.y === 0) {
+                alert('Please select a region first');
+                return;
+            }
+            
+            const selectedImage = getSelectedRegion();
+            analyzeProblem(selectedImage);
+        }
+
+        function analyzeDrawing() {
+            const imageData = canvas.toDataURL();
+            analyzeProblem(imageData);
+        }
+
+        function analyzeProblem(imageData) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.textContent = 'Analyzing...';
+            
+            fetch('/analyze_drawing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: imageData
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const solution = {
+                        id: Date.now(),
+                        timestamp: new Date().toLocaleString(),
+                        problem: imageData,
+                        solution: data.response
+                    };
+                    solutions.unshift(solution);
+                    updateSolutionHistory();
+                    responseDiv.innerHTML = data.response.replace(/\n/g, '<br>') || 'No response from AI';
+                } else {
+                    responseDiv.textContent = data.message || 'Error analyzing drawing';
+                }
+            })
+            .catch(error => {
+                responseDiv.textContent = 'Error: Could not analyze drawing';
+                console.error('Error:', error);
+            });
+        }
+
+        function updateSolutionHistory() {
+            const historyDiv = document.getElementById('solutionHistory');
+            historyDiv.innerHTML = '';
+            
+            solutions.forEach((solution, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <strong>Solution ${solutions.length - index}</strong><br>
+                    ${solution.timestamp}<br>
+                    <img src="${solution.problem}" alt="Problem" style="max-width: 200px; margin: 5px 0;">
+                    <button onclick="showSolution(${solution.id})" style="margin-left: 10px;">View</button>
+                    <button onclick="deleteSolution(${solution.id})" style="margin-left: 5px;">Delete</button>
+                `;
+                historyDiv.appendChild(historyItem);
+            });
+        }
+
+        function showSolution(id) {
+            const solution = solutions.find(s => s.id === id);
+            if (solution) {
+                const responseDiv = document.getElementById('response');
+                responseDiv.innerHTML = solution.solution.replace(/\n/g, '<br>');
+            }
+        }
+
+        function deleteSolution(id) {
+            solutions = solutions.filter(s => s.id !== id);
+            updateSolutionHistory();
+        }
+
+        // Event listeners for drawing
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch support
+        canvas.addEventListener('touchstart', handleTouch);
+        canvas.addEventListener('touchmove', handleTouch);
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            const container = document.querySelector('.container');
+            if (window.innerWidth < 1200) {
+                container.style.flexDirection = 'column';
+            } else {
+                container.style.flexDirection = 'row';
+            }
+        });
+
+        // Initialize canvas and history
+        clearCanvas();
+        saveState();
+        updateSolutionHistory();
+    </script>
+</body>
+</html>
